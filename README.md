@@ -77,8 +77,27 @@ CoreDNS is running at https://192.168.49.2:8443/api/v1/namespaces/kube-system/se
 ```
 This link help me to find solution -https://github.com/kubernetes/minikube/issues/8844
 
+### 2. Deleting Deployments
 
-### 2. ImagePullBackOff/ErrImagePull Status
+1. If created it using url 
+
+```bash
+kubectl apply -f https://k8s.io/examples/controllers/nginx-deployment.yaml
+```
+2. Delete it using only url
+```bash
+kubectl delete -f https://k8s.io/examples/controllers/nginx-deployment.yaml
+```
+3. If created it using yml file
+```bash
+kubectl apply -f pod.yml
+```
+
+```bash
+kubectl delete -f pod.yml
+```
+
+### 3. ImagePullBackOff/ErrImagePull Status
 
 1. if creating any deployment e.g. following pod.yml file from official link : https://kubernetes.io/docs/concepts/workloads/controllers/deployment
 
@@ -193,4 +212,179 @@ Events:
   Warning  Failed          14s (x3 over 3m58s)  kubelet  Error: ImagePullBackOff
 ```
 
+### 4. "Failed to pull image "nginx:1.14.2": toomanyrequests: You have reached your unauthenticated pull rate limit"
+
+if you are using following yaml link : https://kubernetes.io/docs/concepts/workloads/controllers/deployment
+
+File name : controllers/nginx-deployment.yaml
+
+```bash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+```
+
+1. If you apply above deployment file there is issues
+ you will get
+
+```bash
+kubectl apply -f pod.yml
+```
+you will get following error "ErrImagePull/ImagePullBackOff"
+
+```bash
+root@mangesh-OptiPlex-5050:~# kubectl get pods -w
+NAME                                READY   STATUS             RESTARTS   AGE
+nginx-deployment-854d56bbc7-9x2rc   0/1     ImagePullBackOff   0          6m12s
+nginx-deployment-dd9497b84-n6tzg    0/1     ImagePullBackOff   0          21m
+nginx-deployment-dd9497b84-tmrpr    0/1     ImagePullBackOff   0          21m
+nginx-deployment-dd9497b84-wlgv2    0/1     ImagePullBackOff   0          21m
+```
+for this error you will get "Failed to pull image "nginx:1.14.2": Error response from daemon: toomanyrequests: You have reached your unauthenticated pull rate limit. https://www.docker.com/increase-rate-limit"
+
+```bash
+Name:             nginx-deployment-f9cb5d648-67dwj
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Mon, 08 Sep 2025 22:00:51 +0530
+Labels:           app=nginx
+                  pod-template-hash=f9cb5d648
+Annotations:      <none>
+Status:           Pending
+IP:               10.244.0.57
+IPs:
+  IP:           10.244.0.57
+Controlled By:  ReplicaSet/nginx-deployment-f9cb5d648
+Containers:
+  nginx:
+    Container ID:   
+    Image:          nginx:1.14.2
+    Image ID:       
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Waiting
+      Reason:       ErrImagePull
+    Ready:          False
+    Restart Count:  0
+    Limits:
+      cpu:     250m
+      memory:  256Mi
+    Requests:
+      cpu:        100m
+      memory:     128Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-5v8w8 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-5v8w8:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age   From               Message
+  ----     ------     ----  ----               -------
+  Normal   Scheduled  15s   default-scheduler  Successfully assigned default/nginx-deployment-f9cb5d648-67dwj to minikube
+  Normal   Pulling    14s   kubelet            Pulling image "nginx:1.14.2"
+  Warning  Failed     9s    kubelet            Failed to pull image "nginx:1.14.2": Error response from daemon: toomanyrequests: You have reached your unauthenticated pull rate limit. https://www.docker.com/increase-rate-limit
+  Warning  Failed     9s    kubelet            Error: ErrImagePull
+  Normal   BackOff    8s    kubelet            Back-off pulling image "nginx:1.14.2"
+  Warning  Failed     8s    kubelet            Error: ImagePullBackOff
+
+```
+This happens because Docker Hub enforces pull rate limits for anonymous users:
+
+100 pulls / 6 hours for unauthenticated users.
+
+200 pulls / 6 hours if logged in with a free Docker account.
+
+Higher limits for Pro/Team accounts.
+
+for fixing this issue 
+
+Authenticate with Docker Hub (Recommended)
+
+Create a Kubernetes Secret with your Docker Hub credentials:
+
+```bash
+kubectl create secret docker-registry regcred \
+  --docker-username=YOUR_DOCKER_USERNAME \
+  --docker-password=YOUR_DOCKER_PASSWORD/TOKEN \
+  --docker-email=YOUR_EMAIL
+
+```
+Reference the secret in your Deployment:
+```bash
+spec:
+  imagePullSecrets:
+    - name: regcred
+  containers:
+    - name: nginx
+      image: nginx:1.14.2
+```
+File will be like 
+```bash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      imagePullSecrets:
+         - name: regcred
+      containers:
+      - name: nginx
+        image: nginx:1.29.1
+        ports:
+        - containerPort: 80
+```
+Now apply the yaml check your pods
+
+```bash
+```
+
+```bash
+```
 
