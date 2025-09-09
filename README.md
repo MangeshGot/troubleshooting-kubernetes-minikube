@@ -1,3 +1,47 @@
+
+# kubectl commands
+
+## Creating objects 
+
+For start for applying deployment or services
+
+```bash
+kubectl apply -f pod.yml
+```
+## Viewing and finding resources
+
+For checking any deployment or services Status
+
+```bash
+kubectl get pods --all-namespaces             # List all pods in all namespaces
+kubectl get pods -o wide                      # List all pods in the current namespace, with more details
+kubectl get deployment my-dep                 # List a particular deployment
+kubectl get pods                              # List all pods in the namespace
+kubectl get pod my-pod -o yaml                # Get a pod's YAML
+```
+## Deleting resources
+
+For deleting any deployment or services
+
+```bash
+kubectl delete -f ./pod.json                                      # Delete a pod using the type and name specified in pod.json
+```
+
+## Interacting with running Pods 
+
+```bash
+kubectl logs my-pod                                 # dump pod logs (stdout)
+```
+```bash
+kubectl run -i --tty busybox --image=busybox:1.28 -- sh  # Run pod as interactive shell
+```
+```bash
+kubectl exec my-pod -- ls /                         # Run command in existing pod (1 container case)
+```
+```bash
+kubectl top pod                                     # Show metrics for all pods in the default namespace
+```
+
 ## Troubleshooting Kubernetes - minikube and kubectl
 
 
