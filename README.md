@@ -228,6 +228,39 @@ footer {
 </html>
 ```
 
+#### create service.yml
+
+```bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-app
+spec:
+  type: NodePort
+  selector:
+    app: python-deployment
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30007
+```
+apply service.yml file
+```bash
+kubectl apply -f service.yml 
+```
+check service
+```bash
+kubectl get svc
+```
+check minikube ip
+```bash
+minikube ip
+```
+curl the app
+```bash
+curl -L http://192.168.49.2:30007/demo
+```
+
 ## Troubleshooting Kubernetes - minikube and kubectl
 
 
