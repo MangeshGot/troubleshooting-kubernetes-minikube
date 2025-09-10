@@ -41,6 +41,192 @@ kubectl exec my-pod -- ls /                         # Run command in existing po
 ```bash
 kubectl top pod                                     # Show metrics for all pods in the default namespace
 ```
+## Services
+
+Before creating services clone repo
+```bash
+git clone https://github.com/iam-veeramalla/Docker-Zero-to-Hero.git
+```
+in this repo go to
+
+```bash
+cd /home/mangesh/Docker-Zero-to-Hero/examples/python-web-app
+```
+it has docker file build the image file and push it on your docker Hub
+```bash
+sudo docker build -t mangeshgot/python:latest .         # username/imagename:tagname
+```
+push this image to docker hub (login in docker before pushing it)
+
+```bash
+sudo docker push mangeshgot/python:latest
+```
+
+create deployment.yml file
+```bash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-deployment
+  labels:
+    app: python-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: python-deployment
+  template:
+    metadata:
+      labels:
+        app: python-deployment
+    spec:
+      imagePullSecrets:
+         - name: regcred
+      containers:
+      - name: nginx
+        image: mangeshgot/python:latest
+        ports:
+        - containerPort: 8000
+```
+create imagePullSecrets
+
+```bash
+kubectl create secret docker-registry regcred   --docker-username=YOUR_DOCKER_USERNAME   --docker-password=YOUR_DOCKER_PASSWORD/TOKEN   --docker-email=YOUR_EMAIL
+```
+deploy yml file
+
+```bash
+kubectl apply -f deployment.yml
+```
+check pod IP addresss
+
+```bash
+kubectl get pods -o wide
+```
+
+for me output is this
+```bash
+root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# kubectl get pods -o wide
+NAME                                 READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+python-deployment-75f895676f-4rtv5   1/1     Running   0          65s   10.244.0.82   minikube   <none>           <none>
+python-deployment-75f895676f-82tc5   1/1     Running   0          69s   10.244.0.81   minikube   <none>           <none>
+````
+
+#### Access the minikube cluster
+
+```bash
+minikube ssh
+```
+and curl your python application
+
+```bash
+curl -L http://10.244.0.82:8000/demo
+```
+you will output like following
+
+```bash
+docker@minikube:~$ curl -L http://10.244.0.82:8000/demo
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>CSS Template</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Style the header */
+header {
+  background-color: #666;
+  padding: 30px;
+  text-align: center;
+  font-size: 35px;
+  color: yellow;
+}
+
+/* Create two columns/boxes that floats next to each other */
+nav {
+  float: left;
+  width: 30%;
+  height: 300px; /* only for demonstration, should be removed */
+  background: #ccc;
+  padding: 20px;
+}
+
+/* Style the list inside the menu */
+nav ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+article {
+  float: left;
+  padding: 20px;
+  width: 70%;
+  background-color: #f1f1f1;
+  height: 300px; /* only for demonstration, should be removed */
+}
+
+/* Clear floats after the columns */
+section::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Style the footer */
+footer {
+  background-color: #777;
+  padding: 10px;
+  text-align: center;
+  color: yellow;
+}
+
+/* Responsive layout - makes the two columns/boxes stack on top of each other instead of next to each other, on small screens */
+@media (max-width: 600px) {
+  nav, article {
+    width: 100%;
+    height: auto;
+  }
+}
+</style>
+</head>
+<body>
+
+
+<header>
+  <h2>Free DevOps Course By Abhishek</h2>
+</header>
+
+<section>
+  <nav>
+    <ul>
+      <li><a href="www.youtube.com/@AbhishekVeeramalla">YouTube</a></li>
+      <li><a href="www.linkedin.com/in/abhishek-veeramalla-77b33996/">LinkedIn</a></li>
+      <li><a href="https://telegram.me/abhishekveeramalla">Telegram</a></li>
+    </ul>
+  </nav>
+  
+  <article>
+    <h1>Agenda</h1>
+    <p>Learn DevOps with strong foundational knowledge and practical understanding</p>
+    <p>Please Share the Channel with your friends and colleagues</p>
+  </article>
+</section>
+
+<footer>
+  <p>@AbhishekVeeramalla</p>
+</footer>
+
+</body>
+</html>
+```
 
 ## Troubleshooting Kubernetes - minikube and kubectl
 
