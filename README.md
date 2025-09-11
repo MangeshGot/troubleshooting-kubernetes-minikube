@@ -41,7 +41,7 @@ kubectl exec my-pod -- ls /                         # Run command in existing po
 ```bash
 kubectl top pod                                     # Show metrics for all pods in the default namespace
 ```
-## Services
+## Deploy Docker image into Kubernetes Cluster
 
 Before creating services clone repo
 ```bash
@@ -112,7 +112,7 @@ python-deployment-75f895676f-4rtv5   1/1     Running   0          65s   10.244.0
 python-deployment-75f895676f-82tc5   1/1     Running   0          69s   10.244.0.81   minikube   <none>           <none>
 ````
 
-#### Access the minikube cluster
+#### Accessing the minikube cluster
 
 ```bash
 minikube ssh
@@ -227,8 +227,9 @@ footer {
 </body>
 </html>
 ```
+## Creating Kubernetes Services
 
-#### create service.yml
+1. we have create service.yml
 
 ```bash
 apiVersion: v1
@@ -244,24 +245,141 @@ spec:
       targetPort: 8000
       nodePort: 30007
 ```
-apply service.yml file
+2. Apply service.yml file
+
 ```bash
 kubectl apply -f service.yml 
 ```
-check service
+3. Check all service
+
 ```bash
 kubectl get svc
 ```
-check minikube ip
+4. Check minikube ip
+
 ```bash
 minikube ip
 ```
-curl the app
+5. curl the python app
+
 ```bash
 curl -L http://192.168.49.2:30007/demo
 ```
+## Creating Kubernetes Ingress
 
-## Troubleshooting Kubernetes - minikube and kubectl
+1. Create ingress.yml
+
+```bash
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-example
+spec:
+  rules:
+  - host: "foo.bar.com"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/bar"
+        backend:
+          service:
+            name: python-app
+            port:
+              number: 80
+```
+2. Apply ingress.yml file
+
+```bash
+kubectl apply -f ingress.yml 
+```
+3. Check all ingress
+
+```bash
+kubectl get ingress
+```
+4. enable ingress controller on minikube
+```bash
+minikube addons enable ingress
+```
+5.check ingress pods
+
+```bash
+kubectl get pods -A | grep nginx
+```
+output
+```bash
+root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# kubectl get pods -A | grep nginx
+ingress-nginx          ingress-nginx-admission-create-vqtss         0/1     Completed   0               89s
+ingress-nginx          ingress-nginx-admission-patch-jxqql          0/1     Completed   0               89s
+ingress-nginx          ingress-nginx-controller-67c5cb88f-nwnlc     1/1     Running     0               89s
+```
+6. check logs if ingress is enable or not
+
+```bash
+kubectl logs ingress-nginx-controller-67c5cb88f-nwnlc -n ingress-nginx
+```
+output
+```bash
+root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# kubectl logs ingress-nginx-controller-67c5cb88f-nwnlc -n ingress-nginx
+-------------------------------------------------------------------------------
+NGINX Ingress controller
+  Release:       v1.12.2
+  Build:         7995f327cd0c228bda326a9e287ba559799bffe0
+  Repository:    https://github.com/kubernetes/ingress-nginx
+  nginx version: nginx/1.25.5
+
+-------------------------------------------------------------------------------
+
+W0911 01:26:56.650636       8 client_config.go:667] Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
+I0911 01:26:56.651222       8 main.go:205] "Creating API client" host="https://10.96.0.1:443"
+I0911 01:26:56.662065       8 main.go:248] "Running in Kubernetes cluster" major="1" minor="33" git="v1.33.1" state="clean" commit="8adc0f041b8e7ad1d30e29cc59c6ae7a15e19828" platform="linux/amd64"
+I0911 01:26:56.897049       8 main.go:101] "SSL fake certificate created" file="/etc/ingress-controller/ssl/default-fake-certificate.pem"
+I0911 01:26:56.909979       8 ssl.go:535] "loading tls certificate" path="/usr/local/certificates/cert" key="/usr/local/certificates/key"
+I0911 01:26:56.920640       8 nginx.go:271] "Starting NGINX Ingress controller"
+I0911 01:26:56.931110       8 event.go:377] Event(v1.ObjectReference{Kind:"ConfigMap", Namespace:"ingress-nginx", Name:"ingress-nginx-controller", UID:"ae8b41ef-4fe9-4c3a-98d5-032279b4382d", APIVersion:"v1", ResourceVersion:"94432", FieldPath:""}): type: 'Normal' reason: 'CREATE' ConfigMap ingress-nginx/ingress-nginx-controller
+I0911 01:26:56.936301       8 event.go:377] Event(v1.ObjectReference{Kind:"ConfigMap", Namespace:"ingress-nginx", Name:"tcp-services", UID:"f29b1a16-183b-4356-86b7-987c751d45dd", APIVersion:"v1", ResourceVersion:"94433", FieldPath:""}): type: 'Normal' reason: 'CREATE' ConfigMap ingress-nginx/tcp-services
+I0911 01:26:56.936487       8 event.go:377] Event(v1.ObjectReference{Kind:"ConfigMap", Namespace:"ingress-nginx", Name:"udp-services", UID:"d1a460df-92f1-4acc-b6a5-886dbbb8aca9", APIVersion:"v1", ResourceVersion:"94434", FieldPath:""}): type: 'Normal' reason: 'CREATE' ConfigMap ingress-nginx/udp-services
+I0911 01:26:58.024187       8 store.go:440] "Found valid IngressClass" ingress="default/ingress-example" ingressclass="_"
+I0911 01:26:58.024515       8 event.go:377] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"ingress-example", UID:"20a3a935-1fd4-442b-99ae-6579a795d5e8", APIVersion:"networking.k8s.io/v1", ResourceVersion:"94177", FieldPath:""}): type: 'Normal' reason: 'Sync' Scheduled for sync
+I0911 01:26:58.122908       8 nginx.go:317] "Starting NGINX process"
+I0911 01:26:58.122949       8 leaderelection.go:257] attempting to acquire leader lease ingress-nginx/ingress-nginx-leader...
+I0911 01:26:58.123397       8 nginx.go:337] "Starting validation webhook" address=":8443" certPath="/usr/local/certificates/cert" keyPath="/usr/local/certificates/key"
+I0911 01:26:58.123851       8 controller.go:196] "Configuration changes detected, backend reload required"
+I0911 01:26:58.134056       8 leaderelection.go:271] successfully acquired lease ingress-nginx/ingress-nginx-leader
+I0911 01:26:58.134114       8 status.go:85] "New leader elected" identity="ingress-nginx-controller-67c5cb88f-nwnlc"
+I0911 01:26:58.138547       8 status.go:219] "POD is not ready" pod="ingress-nginx/ingress-nginx-controller-67c5cb88f-nwnlc" node="minikube"
+I0911 01:26:58.209452       8 controller.go:216] "Backend successfully reloaded"
+I0911 01:26:58.209524       8 controller.go:227] "Initial sync, sleeping for 1 second"
+I0911 01:26:58.209575       8 event.go:377] Event(v1.ObjectReference{Kind:"Pod", Namespace:"ingress-nginx", Name:"ingress-nginx-controller-67c5cb88f-nwnlc", UID:"d4eb9f09-c8c8-4bb5-ba2d-4baea096f9da", APIVersion:"v1", ResourceVersion:"94475", FieldPath:""}): type: 'Normal' reason: 'RELOAD' NGINX reload triggered due to a change in configuration
+I0911 01:27:58.171255       8 status.go:304] "updating Ingress status" namespace="default" ingress="ingress-example" currentValue=null newValue=[{"ip":"192.168.49.2"}]
+I0911 01:27:58.176865       8 event.go:377] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"ingress-example", UID:"20a3a935-1fd4-442b-99ae-6579a795d5e8", APIVersion:"networking.k8s.io/v1", ResourceVersion:"94629", FieldPath:""}): type: 'Normal' reason: 'Sync' Scheduled for sync
+root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# kubectl get ingress
+NAME              CLASS    HOSTS         ADDRESS        PORTS   AGE
+ingress-example   <none>   foo.bar.com   192.168.49.2   80      8m56s
+root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# curl -L http://foo.bar.com/bar -v
+* Could not resolve host: foo.bar.com
+* Closing connection
+curl: (6) Could not resolve host: foo.bar.com
+root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# vim /etc/hosts
+root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# ping foo.bar.com
+PING foo.bar.com (192.168.49.2) 56(84) bytes of data.
+64 bytes from foo.bar.com (192.168.49.2): icmp_seq=1 ttl=64 time=0.070 ms
+64 bytes from foo.bar.com (192.168.49.2): icmp_seq=2 ttl=64 time=0.060 ms
+64 bytes from foo.bar.com (192.168.49.2): icmp_seq=3 ttl=64 time=0.058 ms
+64 bytes from foo.bar.com (192.168.49.2): icmp_seq=4 ttl=64 time=0.066 ms
+64 bytes from foo.bar.com (192.168.49.2): icmp_seq=5 ttl=64 time=0.059 ms
+64 bytes from foo.bar.com (192.168.49.2): icmp_seq=6 ttl=64 time=0.032 ms
+^C
+--- foo.bar.com ping statistics ---
+6 packets transmitted, 6 received, 0% packet loss, time 5109ms
+rtt min/avg/max/mdev = 0.032/0.057/0.070/0.012 ms
+```
+7. now access your python app
+```bash
+curl -L http://foo.bar.com/bar -v
+```
+
+# Troubleshooting Kubernetes - minikube and kubectl
 
 
 ### 1. Unhandled Error 
