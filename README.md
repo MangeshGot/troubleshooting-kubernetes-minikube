@@ -360,7 +360,26 @@ root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web
 * Could not resolve host: foo.bar.com
 * Closing connection
 curl: (6) Could not resolve host: foo.bar.com
-root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# vim /etc/hosts
+```
+
+7. add a route for foo.bar.com in hosts file
+  a. edit the file using
+  
+  ```bash
+  vim /etc/hosts
+  ```
+  b. add the route
+
+  ```bash
+  192.168.49.2    foo.bar.com
+  ```
+8. check weather its ping or not
+
+```bash
+ping foo.bar.com
+```
+
+```bash
 root@mangesh-OptiPlex-5050:/home/mangesh/Docker-Zero-to-Hero/examples/python-web-app# ping foo.bar.com
 PING foo.bar.com (192.168.49.2) 56(84) bytes of data.
 64 bytes from foo.bar.com (192.168.49.2): icmp_seq=1 ttl=64 time=0.070 ms
@@ -374,7 +393,7 @@ PING foo.bar.com (192.168.49.2) 56(84) bytes of data.
 6 packets transmitted, 6 received, 0% packet loss, time 5109ms
 rtt min/avg/max/mdev = 0.032/0.057/0.070/0.012 ms
 ```
-7. now access your python app
+9. now access your python app
 ```bash
 curl -L http://foo.bar.com/bar -v
 ```
