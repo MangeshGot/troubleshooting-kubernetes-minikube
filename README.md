@@ -782,9 +782,190 @@ spec:
 ```
 Now apply the yaml check your pods
 
-```bash
-```
+
+# Helm-Prometheus-Grafana on Ubuntu LTS
+
+## Helm Installations Process
+
+1. For installl Helm run following command
 
 ```bash
+sudo apt-get install curl gpg apt-transport-https --yes
+curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
+```
+2. After installaing helm add repo like bitnami
+
+```bash
+sudo helm repo add bitnami https://charts.bitnami.com/bitnami
+```
+3.Check if repo working or not
+```bash
+sudo helm search repo bitnami
+```
+## Prometheus Installations Process
+
+1. Before installing Prometheus ad repo in helm
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+```
+2. check added repo once
+
+```bash
+helm search repo prometheus-community
+```
+3. update repo once
+
+```bash
+helm repo update
+```
+4. now install prometheus
+```bash
+helm install prometheus prometheus-community/prometheus
+```
+5. Check prometheus is working or not
+```bash
+kubectl get pods
+```
+6. check prometheus services
+```bash
+kubectl get svc
+```
+output will be
+```bash
+root@mangesh-OptiPlex-5050:~# kubectl get svc
+NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+kubernetes                            ClusterIP   10.96.0.1       <none>        443/TCP        7d5h
+kubeshark-front                       ClusterIP   10.97.226.134   <none>        80/TCP         2d22h
+kubeshark-hub                         ClusterIP   10.109.101.26   <none>        80/TCP         2d22h
+kubeshark-hub-metrics                 ClusterIP   10.108.5.43     <none>        9100/TCP       2d22h
+kubeshark-worker-metrics              ClusterIP   10.108.137.30   <none>        49100/TCP      2d22h
+prometheus-alertmanager               ClusterIP   10.100.207.61   <none>        9093/TCP       36m
+prometheus-alertmanager-headless      ClusterIP   None            <none>        9093/TCP       36m
+prometheus-kube-state-metrics         ClusterIP   10.108.12.248   <none>        8080/TCP       36m
+prometheus-prometheus-node-exporter   ClusterIP   10.98.66.178    <none>        9100/TCP       36m
+prometheus-prometheus-pushgateway     ClusterIP   10.108.57.197   <none>        9091/TCP       36m
+prometheus-server                     ClusterIP   10.105.76.104   <none>        80/TCP         36m
+python-app                            NodePort    10.108.188.47   <none>        80:30007/TCP   3d14h
 ```
 
+7. expose prometheus-server service
+```bash
+kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
+service/prometheus-server-ext exposed
+```
+8. check the port
+
+```bash
+kubectl get svc
+```
+output will be
+```bash
+root@mangesh-OptiPlex-5050:~# kubectl get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+kubernetes                            ClusterIP   10.96.0.1        <none>        443/TCP        7d5h
+kubeshark-front                       ClusterIP   10.97.226.134    <none>        80/TCP         2d22h
+kubeshark-hub                         ClusterIP   10.109.101.26    <none>        80/TCP         2d22h
+kubeshark-hub-metrics                 ClusterIP   10.108.5.43      <none>        9100/TCP       2d22h
+kubeshark-worker-metrics              ClusterIP   10.108.137.30    <none>        49100/TCP      2d22h
+prometheus-alertmanager               ClusterIP   10.100.207.61    <none>        9093/TCP       38m
+prometheus-alertmanager-headless      ClusterIP   None             <none>        9093/TCP       38m
+prometheus-kube-state-metrics         ClusterIP   10.108.12.248    <none>        8080/TCP       38m
+prometheus-prometheus-node-exporter   ClusterIP   10.98.66.178     <none>        9100/TCP       38m
+prometheus-prometheus-pushgateway     ClusterIP   10.108.57.197    <none>        9091/TCP       38m
+prometheus-server                     ClusterIP   10.105.76.104    <none>        80/TCP         38m
+prometheus-server-ext                 NodePort    10.105.206.149   <none>        80:32165/TCP   48s
+python-app                            NodePort    10.108.188.47    <none>        80:30007/TCP   3d14h
+```
+the port of prometheus-server-ext will be port : 32165
+9. check minikube IP
+```bash
+minikube ip
+```
+10. And access prometheus using minikube ip
+```bash
+http://192.168.49.2:32165/query
+```
+## Grafana Installations Process
+1. add helm repo of grafana
+```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+```
+2. update repo
+```bash
+helm repo update
+```
+3. install grafana
+```bash
+helm install my-grafana grafana/grafana
+```
+output will
+```bash
+root@mangesh-OptiPlex-5050:~# helm install my-grafana grafana/grafana
+NAME: my-grafana
+LAST DEPLOYED: Sat Sep 13 21:51:03 2025
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get your 'admin' user password by running:
+
+   kubectl get secret --namespace default my-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+
+2. The Grafana server can be accessed via port 80 on the following DNS name from within your cluster:
+
+   my-grafana.default.svc.cluster.local
+
+   Get the Grafana URL to visit by running these commands in the same shell:
+     export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=my-grafana" -o jsonpath="{.items[0].metadata.name}")
+     kubectl --namespace default port-forward $POD_NAME 3000
+
+3. Login with the password from step 1 and the username: admin
+#################################################################################
+######   WARNING: Persistence is disabled!!! You will lose your data when   #####
+######            the Grafana pod is terminated.                            #####
+#################################################################################
+```
+4. check password
+```bash
+kubectl get secret --namespace default my-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+```
+5. check service
+```bash
+kubectl get svc
+```
+output will be
+```bash
+root@mangesh-OptiPlex-5050:~# kubectl get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+kubernetes                            ClusterIP   10.96.0.1        <none>        443/TCP        7d5h
+kubeshark-front                       ClusterIP   10.97.226.134    <none>        80/TCP         2d22h
+kubeshark-hub                         ClusterIP   10.109.101.26    <none>        80/TCP         2d22h
+kubeshark-hub-metrics                 ClusterIP   10.108.5.43      <none>        9100/TCP       2d22h
+kubeshark-worker-metrics              ClusterIP   10.108.137.30    <none>        49100/TCP      2d22h
+my-grafana                            ClusterIP   10.109.118.122   <none>        80/TCP         2m12s
+prometheus-alertmanager               ClusterIP   10.100.207.61    <none>        9093/TCP       44m
+prometheus-alertmanager-headless      ClusterIP   None             <none>        9093/TCP       44m
+prometheus-kube-state-metrics         ClusterIP   10.108.12.248    <none>        8080/TCP       44m
+prometheus-prometheus-node-exporter   ClusterIP   10.98.66.178     <none>        9100/TCP       44m
+prometheus-prometheus-pushgateway     ClusterIP   10.108.57.197    <none>        9091/TCP       44m
+prometheus-server                     ClusterIP   10.105.76.104    <none>        80/TCP         44m
+prometheus-server-ext                 NodePort    10.105.206.149   <none>        80:32165/TCP   6m31s
+python-app                            NodePort    10.108.188.47    <none>        80:30007/TCP   3d14h
+```
+
+6. expose my-grafana service
+```bash
+kubectl expose service my-grafana --type=NodePort --target-port=3000 --name=grafana-ext
+```
+7. check port
+```bash
+kubectl get svc
+```
+8. access grafana using minikube ip and port
+```bash
+http://192.168.49.2:31081
+```
